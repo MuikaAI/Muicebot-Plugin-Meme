@@ -1,9 +1,11 @@
-from nonebot_plugin_alconna import UniMessage, UniMsg, uniseg
-from nonebot.adapters import Event
 from typing import Literal
+
 from muicebot.models import Resource
-from muicebot.utils.utils import download_file
+from muicebot.utils.utils import download_file, get_file_via_adapter
 from nonebot import logger
+from nonebot.adapters import Event
+from nonebot_plugin_alconna import UniMessage, uniseg
+
 
 async def extract_multi_resource(
     message: UniMessage, type: Literal["audio", "image", "video", "file"], event: Event
@@ -14,7 +16,9 @@ async def extract_multi_resource(
     resources = []
 
     for resource in message:
-        assert isinstance(resource, uniseg.segment.Media)  # 正常情况下应该都是 Media 的子类
+        assert isinstance(
+            resource, uniseg.segment.Media
+        )  # 正常情况下应该都是 Media 的子类
 
         try:
             if resource.path is not None:

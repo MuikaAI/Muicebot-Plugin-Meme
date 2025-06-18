@@ -1,19 +1,18 @@
-from arclet.alconna import Alconna, Args
-from nonebot.adapters import Event, Bot
-from nonebot import logger
-from nonebot_plugin_alconna.uniseg import UniMsg
-from nonebot_plugin_alconna import (
-    on_alconna,
-    uniseg,
-    Image,
-)
-from nonebot_plugin_orm import async_scoped_session
-
 import re
 from random import random
 
+from arclet.alconna import Alconna, Args
 from muicebot.models import Resource
 from muicebot.plugin import PluginMetadata
+from nonebot import logger
+from nonebot.adapters import Bot, Event
+from nonebot_plugin_alconna import (
+    Image,
+    on_alconna,
+    uniseg,
+)
+from nonebot_plugin_alconna.uniseg import UniMsg
+from nonebot_plugin_orm import async_scoped_session
 
 from .config import Config, config
 from .utils import extract_multi_resource
@@ -31,6 +30,7 @@ image_event = on_alconna(
     block=False,
 )
 
+
 @image_event.handle()
 async def auto_save_image(
     bot_message: UniMsg,
@@ -38,15 +38,14 @@ async def auto_save_image(
     bot: Bot,
     db_session: async_scoped_session,
 ):
-    if random.random() > config.meme_save_probability:
+    if random() > config.meme_save_probability:
         return
-    
-    images:list[Resource] = []
+
+    images: list[Resource] = []
     message_images = bot_message.get(uniseg.Image)
     images.extend(await extract_multi_resource(message_images, "image", event))
 
     if not images:
         return
-    
+
     logger.debug("正在偷图...")
-    

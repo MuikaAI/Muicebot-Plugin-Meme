@@ -1,8 +1,11 @@
-from muicebot.models import Message
-from ..models import Meme
-from nonebot import logger
-from time import time_ns
 import random
+from time import time_ns
+
+from muicebot.models import Message
+from nonebot import logger
+
+from ..models import Meme
+
 
 def _levenshtein_distance(s1: str, s2: str) -> int:
     """
@@ -14,7 +17,7 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
     if len(s2) == 0:
         return len(s1)
 
-    previous_row = range(len(s2) + 1)
+    previous_row = list(range(len(s2) + 1))
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
@@ -26,14 +29,17 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
 
     return previous_row[-1]
 
+
 def _extract_keywords(text: str) -> list[str]:
     """
     从文本中提取关键词，假设关键词被括号包围
     """
     import re
+
     # 使用正则表达式提取括号中的内容
-    keywords = re.findall(r'\((.*?)\)', text)
+    keywords = re.findall(r"\((.*?)\)", text)
     return [keyword.strip() for keyword in keywords if keyword.strip()]
+
 
 def query_meme(message: Message, memes: list[Meme]) -> int:
     """
@@ -58,7 +64,7 @@ def query_meme(message: Message, memes: list[Meme]) -> int:
 
     # 按照编辑距离排序
     meme_scores.sort(key=lambda x: x[1])
-    
+
     # 随机从编辑距离最小的 Meme 中抽取一个
     min_distance = meme_scores[0][1]
     candidates = [meme for meme, distance in meme_scores if distance == min_distance]

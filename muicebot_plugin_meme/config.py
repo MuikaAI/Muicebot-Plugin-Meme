@@ -1,6 +1,8 @@
-from pydantic import BaseModel
 from typing import Literal
+
 from nonebot import get_plugin_config
+from pydantic import BaseModel
+
 
 class Config(BaseModel):
     meme_probability: float = 0.1
@@ -17,5 +19,6 @@ class Config(BaseModel):
     """全局最大查询数量"""
     enable_security_check: bool = True
     """启用基于 LLM 的安全检查"""
+
 
 config = get_plugin_config(Config)

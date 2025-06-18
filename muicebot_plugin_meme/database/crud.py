@@ -1,11 +1,13 @@
-from nonebot_plugin_orm import async_scoped_session
-from sqlalchemy import select, update, func
-from .orm_models import MemeORM
-from ..models import Meme
-from typing import Optional
-from pathlib import Path
-from functools import lru_cache
 import json
+from pathlib import Path
+from typing import Optional
+
+from nonebot_plugin_orm import async_scoped_session
+from sqlalchemy import func, select, update
+
+from ..models import Meme
+from .orm_models import MemeORM
+
 
 class MemeRepository:
     @staticmethod
@@ -17,11 +19,13 @@ class MemeRepository:
             valid=meme_orm.valid,
             description=meme_orm.description,
             tag=list(meme_orm.tag),
-            usage=meme_orm.usage
+            usage=meme_orm.usage,
         )
 
     @staticmethod
-    async def get_all_memes(session: async_scoped_session, limit: Optional[int] = None) -> list[Meme]:
+    async def get_all_memes(
+        session: async_scoped_session, limit: Optional[int] = None
+    ) -> list[Meme]:
         """
         获得全部 memes
         """
@@ -29,9 +33,11 @@ class MemeRepository:
         result = await session.execute(stmt)
         memes = result.scalars().all()
         return [MemeRepository._convert(meme) for meme in memes]
-    
+
     @staticmethod
-    async def get_meme_by_id(session: async_scoped_session, memeid: int) -> Optional[Meme]:
+    async def get_meme_by_id(
+        session: async_scoped_session, memeid: int
+    ) -> Optional[Meme]:
         stmt = select(MemeORM).where(MemeORM.id == id)
         result = await session.execute(stmt)
         meme = result.scalar_one_or_none()
@@ -44,12 +50,12 @@ class MemeRepository:
         """
         session.add(
             MemeORM(
-            path=meme.path,
-            hash=meme.hash,
-            valid=meme.valid,
-            description=meme.description,
-            tag=json.dumps(meme.tag, ensure_ascii=False),
-            usage=meme.usage
+                path=meme.path,
+                hash=meme.hash,
+                valid=meme.valid,
+                description=meme.description,
+                tag=json.dumps(meme.tag, ensure_ascii=False),
+                usage=meme.usage,
             )
         )
 
@@ -60,7 +66,7 @@ class MemeRepository:
 
         这不会真正从表中删除，而是将 meme 标记为 invalid
         """
-        stmt = update(MemeORM).where(MemeORM.id == meme_id).values(valid = False)
+        stmt = update(MemeORM).where(MemeORM.id == meme_id).values(valid=False)
         await session.execute(stmt)
 
     @staticmethod
@@ -68,5 +74,7 @@ class MemeRepository:
         """
         获取有效的 Memes 数量
         """
-        count = await session.execute(select(func.count()).where(MemeORM.valid == True))
+        count = await session.execute(
+            select(func.count()).where(MemeORM.valid == True)  # noqa:E712
+        )
         return count.scalar() or 0
