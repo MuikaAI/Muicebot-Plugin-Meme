@@ -29,7 +29,7 @@ meme_manager = MemeManager()
 async def is_image_event(event: Event) -> bool:
     message = event.get_message()
     logger.debug(message.get_segment_class())
-    return message.count("image") != 0
+    return message.count("image") != 0 and not message.extract_plain_text()
 
 
 image_event = on_message(rule=is_image_event)
