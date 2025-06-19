@@ -9,11 +9,29 @@
   <a href='https://qm.qq.com/q/lhUBw6Gcdq'><img src="https://img.shields.io/badge/QQ群-MuiceHouse-blue" alt="QQ群组"></a>
 </div>
 
-## 目前支持的表情包匹配算法
+> Work In Progress
+
+## 目前支持的表情包匹配算法(WIP)
 
 - `levenshtein` 编辑距离查询（使用表情包标签和模型回复中的情绪标签进行查询）
 
 - `llm` 直接问 LLM 哪个更加合适
+
+## 安装
+
+向机器人对话：
+
+```
+.store install meme
+```
+
+（可能会）报错，关闭机器人
+
+在命令行窗口中执行数据库迁移：
+
+```
+nb orm upgrade
+```
 
 ## 配置
 
