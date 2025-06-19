@@ -50,7 +50,7 @@ class MemeRepository:
         """
         session.add(
             MemeORM(
-                path=meme.path,
+                path=meme.path.as_posix(),
                 hash=meme.hash,
                 valid=meme.valid,
                 description=meme.description,

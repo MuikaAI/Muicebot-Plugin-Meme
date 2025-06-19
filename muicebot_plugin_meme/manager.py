@@ -106,7 +106,12 @@ class MemeManager:
             return response_int
         elif format == "json":
             try:
-                return json.loads(response_text)
+                # 防止出现代码块
+                escaped_str = re.findall(
+                    r"```(?:\w+)?\n(.*?)```", response_text, re.DOTALL
+                )[0]
+                json_text = escaped_str.replace(r"\n", "\n").replace(r"\t", "\t")
+                return json.loads(json_text)
             except json.JSONDecodeError:
                 logger.error(
                     f"尝试提取模型回复时出现错误，无法将其转换为JSON格式: {response_text}"
@@ -199,6 +204,7 @@ class MemeManager:
             return
 
         if config.enable_security_check:
+            logger.debug("正在进行安全检查...")
             check_result: int = await self._chat_with_model(
                 "回复纯数字0或1",
                 system=self._generate_prompt_from_template(
@@ -210,10 +216,12 @@ class MemeManager:
             if not check_result:
                 logger.warning("此表情包未通过安全检查！已停止添加")
 
+        logger.debug("调用LLM生成表情包描述...")
         meme_desc: dict[str, Any] = await self._chat_with_model(
             "以JSON格式生成标签和内容",
             system=self._generate_prompt_from_template("meme_description.jinja2"),
             image=meme_image,
+            format="json",
         )
 
         new_meme = Meme(
