@@ -1,0 +1,19 @@
+[project]
+name = "muicebot-plugin-meme"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.10, <=3.13"
+dependencies = [
+    "jinja2>=3.1.6",
+    "muicebot>=1.0.1",
+    "nonebot2>=2.4.1",
+    "nonebot_plugin_alconna>=0.54.2",
+    "nonebot_plugin_orm>=0.7.7",
+]
+authors = [
+    { name = "Moemu", email = "i@snowy.moe" },
+]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
