@@ -174,7 +174,7 @@ class MemeManager:
         invalid_memes: list[Meme] = []
 
         for index, meme in enumerate(memes):
-            if not (meme.valid and meme.path.is_file()):
+            if not meme.path.is_file():
                 invalid_memes.append(meme)
                 del valid_memes[index - len(invalid_memes) + 1]
 

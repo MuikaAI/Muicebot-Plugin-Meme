@@ -28,7 +28,7 @@ class MemeRepository:
         session: Union[async_scoped_session, AsyncSession], limit: Optional[int] = None
     ) -> list[Meme]:
         """
-        获得全部 memes
+        获得全部有效 memes
         """
         stmt = select(MemeORM).where(MemeORM.valid == True).limit(limit)  # noqa:E712
         result = await session.execute(stmt)
