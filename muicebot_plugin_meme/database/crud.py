@@ -30,7 +30,7 @@ class MemeRepository:
         """
         获得全部 memes
         """
-        stmt = select(MemeORM).limit(limit)
+        stmt = select(MemeORM).where(MemeORM.valid == True).limit(limit)  # noqa:E712
         result = await session.execute(stmt)
         memes = result.scalars().all()
         return [MemeRepository._convert(meme) for meme in memes]

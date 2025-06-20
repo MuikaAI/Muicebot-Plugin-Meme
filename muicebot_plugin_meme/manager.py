@@ -174,13 +174,12 @@ class MemeManager:
         invalid_memes: list[Meme] = []
 
         for index, meme in enumerate(memes):
-            if meme.valid and meme.path.is_file():
+            if not (meme.valid and meme.path.is_file()):
                 invalid_memes.append(meme)
-            elif meme.valid:
                 del valid_memes[index - len(invalid_memes) + 1]
 
         for invalid_meme in invalid_memes:
-            await self._delete_meme(session, invalid_meme)
+            await self._delete_meme(session, invalid_meme, init=True)
 
         if invalid_memes:
             await session.commit()
@@ -204,17 +203,22 @@ class MemeManager:
 
         logger.info(f"一共加载了 {self._all_valid_memes_count} 个有效 Memes")
 
-    async def _delete_meme(self, session: UNION_SESSION, meme: Meme):
+    async def _delete_meme(self, session: UNION_SESSION, meme: Meme, init=False):
         """
         删除指定 Meme
+
+        :param session: 数据库会话
+        :param meme: Meme 对象
+        :param init: 当前是否是在初始化过程中，即 _all_valid_memes 还未加载
         """
         if meme.path.is_file():
             remove(meme.path)
 
         await MemeRepository.remove_meme(session, meme.id)  # type:ignore
 
-        self._all_valid_memes.remove(meme)
-        self._all_valid_memes_count -= 1
+        if not init:
+            self._all_valid_memes.remove(meme)
+            self._all_valid_memes_count -= 1
 
     async def auto_clean_memes(self, session: async_scoped_session):
         """
