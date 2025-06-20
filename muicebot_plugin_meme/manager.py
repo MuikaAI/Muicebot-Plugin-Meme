@@ -22,15 +22,23 @@ SEARCH_PATH = [Path(__file__).parent / "templates"]
 
 class MemeManager:
     def __init__(self) -> None:
-        self.all_valid_meme: list[Meme] = []
-        self.all_valid_meme_count: int = 0
+        self._all_valid_memes: list[Meme] = []
+        self._all_valid_memes_count: int = 0
         self._jinja2_env = Environment(loader=FileSystemLoader(SEARCH_PATH))
+
+    @property
+    def all_valid_memes_count(self) -> int:
+        return self._all_valid_memes_count
+
+    @property
+    def all_valid_memes(self) -> list[Meme]:
+        return self._all_valid_memes
 
     def _sort_memes(self):
         """
         对 memes 进行排序
         """
-        self.all_valid_meme.sort(key=lambda x: x.usage)
+        self._all_valid_memes.sort(key=lambda x: x.usage)
 
     def _path_to_base64(self, image_path: Path | str) -> str:
         """
@@ -153,10 +161,10 @@ class MemeManager:
         """
         memes = await MemeRepository.get_all_memes(session)
         memes = await self.check_memes_valid(session, memes)
-        self.all_valid_meme = memes
-        self.all_valid_meme_count = len(memes)
+        self._all_valid_memes = memes
+        self._all_valid_memes_count = len(memes)
 
-        logger.info(f"一共加载了 {self.all_valid_meme_count} 个有效 Memes")
+        logger.info(f"一共加载了 {self._all_valid_memes_count} 个有效 Memes")
 
     async def delete_meme(self, session: async_scoped_session, meme: Meme):
         """
@@ -167,25 +175,25 @@ class MemeManager:
 
         await MemeRepository.remove_meme(session, meme.id)  # type:ignore
 
-        self.all_valid_meme.remove(meme)
-        self.all_valid_meme_count -= 1
+        self._all_valid_memes.remove(meme)
+        self._all_valid_memes_count -= 1
 
     async def auto_clean_memes(self, session: async_scoped_session):
         """
         自动删除不使用的 memes
         """
-        if self.all_valid_meme_count <= config.max_memes:
+        if self._all_valid_memes_count <= config.max_memes:
             return
 
         logger.debug("Meme 数量已达上限，正在执行自动清理...")
 
         self._sort_memes()
-        memes_to_delete = self.all_valid_meme[config.max_memes :]
+        memes_to_delete = self._all_valid_memes[config.max_memes :]
         for meme in memes_to_delete:
             await self.delete_meme(session, meme)
 
         logger.info(
-            f"已删除 {len(memes_to_delete)} 个 Memes，当前有效 Memes 数量为 {self.all_valid_meme_count}"
+            f"已删除 {len(memes_to_delete)} 个 Memes，当前有效 Memes 数量为 {self._all_valid_memes_count}"
         )
         await session.commit()
         logger.debug("自动清理 Memes 完成")
@@ -199,7 +207,7 @@ class MemeManager:
 
         new_meme_hash = self._path_to_base64(meme_image.path)
 
-        if any([new_meme_hash == meme.hash for meme in self.all_valid_meme]):
+        if any(new_meme_hash == meme.hash for meme in self._all_valid_memes):
             logger.debug("检查到此 meme 已存在，停止添加")
             return
 
@@ -228,40 +236,49 @@ class MemeManager:
             path=Path(meme_image.path),
             hash=new_meme_hash,
             description=meme_desc.get("desc", ""),
-            tag=meme_desc.get("tags", []),
+            tags=meme_desc.get("tags", []),
         )
 
         await self.auto_clean_memes(session)
         await MemeRepository.save_meme(session, new_meme)
-        self.all_valid_meme.append(new_meme)
-        self.all_valid_meme_count += 1
+        self._all_valid_memes.append(new_meme)
+        self._all_valid_memes_count += 1
 
         logger.success(
-            f"已成功添加新的表情包！描述:{new_meme.description}, 标签: {new_meme.tag}"
+            f"已成功添加新的表情包！描述:{new_meme.description}, 标签: {new_meme.tags}"
         )
 
     async def query_meme(self, message: Message) -> Optional[Meme]:
+        """
+        查询对话中适用的 meme
+        """
         # if config.similarity_method == "cosine":
         #     pass
         if config.meme_similarity_method == "levenshtein":
             from .similarity.levenshtein import query_meme
 
-            meme_id = query_meme(message, self.all_valid_meme)
+            meme_id = query_meme(message, self._all_valid_memes)
         elif config.meme_similarity_method == "llm":
             from .similarity.llm import llm_query
 
-            meme_id = await llm_query(message, self.all_valid_meme)
+            meme_id = await llm_query(message, self._all_valid_memes)
         else:
             raise ValueError(
                 f"未找到要求的相似度匹配算法: {config.meme_similarity_method}"
             )
 
-        meme = next((meme for meme in self.all_valid_meme if meme.id == meme_id), None)
+        if meme_id == -1:
+            logger.info("未找到合适的 Meme, 跳过")
+            return None
+
+        meme = next(
+            (meme for meme in self._all_valid_memes if meme.id == meme_id), None
+        )
         if not meme:
             logger.warning(f"未找到匹配的 Meme，ID: {meme_id}")
             return None
 
         logger.info(
-            f"查询到 Meme: {meme.id}, 标签: {meme.tag}, 描述: {meme.description}"
+            f"查询到 Meme: {meme.id}, 标签: {meme.tags}, 描述: {meme.description}"
         )
         return meme

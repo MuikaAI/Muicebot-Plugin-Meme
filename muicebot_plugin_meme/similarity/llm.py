@@ -27,7 +27,7 @@ def _generate_prompt(memes: list[Meme]) -> str:
     生成查询提示词
     """
     memes_info = [
-        f"id: {meme.id}, tags: {meme.tag}, desc: {meme.description};" for meme in memes
+        f"id: {meme.id}, tags: {meme.tags}, desc: {meme.description};" for meme in memes
     ]
     return "\n".join(memes_info)
 

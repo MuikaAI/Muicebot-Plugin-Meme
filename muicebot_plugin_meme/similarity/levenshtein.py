@@ -55,7 +55,7 @@ def query_meme(message: Message, memes: list[Meme]) -> int:
 
     t1 = time_ns()
     for meme in memes:
-        for tag in meme.tag:
+        for tag in meme.tags:
             for keyword in keywords:
                 distance = _levenshtein_distance(tag, keyword)
                 meme_scores.append((meme, distance))

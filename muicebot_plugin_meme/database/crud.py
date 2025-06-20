@@ -18,7 +18,7 @@ class MemeRepository:
             hash=meme_orm.hash,
             valid=meme_orm.valid,
             description=meme_orm.description,
-            tag=list(meme_orm.tag),
+            tags=list(meme_orm.tag),
             usage=meme_orm.usage,
         )
 
@@ -54,7 +54,7 @@ class MemeRepository:
                 hash=meme.hash,
                 valid=meme.valid,
                 description=meme.description,
-                tag=json.dumps(meme.tag, ensure_ascii=False),
+                tag=json.dumps(meme.tags, ensure_ascii=False),
                 usage=meme.usage,
             )
         )

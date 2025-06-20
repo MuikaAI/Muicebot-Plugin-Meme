@@ -1,9 +1,9 @@
 from random import random
 
-from muicebot.models import Resource
+from muicebot.llm import ModelCompletions
+from muicebot.models import Message, Resource
 from muicebot.plugin import PluginMetadata
-
-# from muicebot.plugin.hook import on_after_completion
+from muicebot.plugin.hook import on_after_completion
 from nonebot import logger, on_message
 from nonebot.adapters import Event
 from nonebot_plugin_alconna import (
@@ -60,6 +60,26 @@ async def auto_save_image(
     await db_session.commit()
 
 
-# @on_after_completion()
-# async def send_meme(completion: ModelCompletions):
-#     pass
+@on_after_completion()
+async def send_meme(message: Message, completions: ModelCompletions):
+    if random() > config.meme_probability:
+        return
+
+    if meme_manager.all_valid_memes_count < config.min_memes:
+        logger.warning("未达到最低表情包要求，已跳过")
+        return
+
+    target_meme = await meme_manager.query_meme(message)
+
+    if target_meme is None:
+        logger.info("未找到合适的 Meme，已跳过")
+        return
+
+    logger.success(
+        f"找到了合适的 Meme! 描述: {target_meme.description} 标签: {target_meme.tags}"
+    )
+    completions.resources.append(
+        Resource(type="image", path=target_meme.path.as_posix())
+    )
+
+    return

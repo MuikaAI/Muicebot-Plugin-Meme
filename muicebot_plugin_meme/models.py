@@ -14,7 +14,7 @@ class Meme:
     """表情包是否有效"""
     description: str = ""
     """表情包描述"""
-    tag: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     """表情包标签"""
     usage: int = 0
     """表情包使用次数"""
