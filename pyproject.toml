@@ -9,6 +9,8 @@ dependencies = [
     "nonebot2>=2.4.1",
     "nonebot_plugin_alconna>=0.54.2",
     "nonebot_plugin_orm>=0.7.7",
+    "nonebot_plugin_localstore>=0.7.4",
+    "httpx>=0.28.1",
 ]
 authors = [
     { name = "Moemu", email = "i@snowy.moe" },
