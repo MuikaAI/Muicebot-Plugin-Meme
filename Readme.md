@@ -9,13 +9,21 @@
   <a href='https://qm.qq.com/q/lhUBw6Gcdq'><img src="https://img.shields.io/badge/QQ群-MuiceHouse-blue" alt="QQ群组"></a>
 </div>
 
-> Work In Progress
+## 介绍✨
 
-## 目前支持的表情包匹配算法(WIP)
+`MuiceBot-Plugin-Memes` 是一个基于 `Muicebot` 的表情包插件，支持自动偷图、生成表情包描述，并自动在对话中插入表情包
 
-- `levenshtein` 编辑距离查询（使用表情包标签和模型回复中的情绪标签进行查询）
+## 目前支持的表情包匹配算法
 
-- `llm` 直接问 LLM 哪个更加合适
+- `levenshtein` 编辑距离查询（使用表情包标签和模型回复中的情绪标签进行查询，容易无结果，一般准确）
+
+- `llm` 直接问 LLM 哪个更加合适（大约需要 1k ~ 3k token，非常准确）
+
+## 先决条件
+
+- `muicebot` 版本号大于等于 `1.0.2` （还没发布）
+
+- 当前需要启用多模态的模型（已确认这是一个框架缺陷）
 
 ## 安装
 
@@ -29,7 +37,7 @@
 
 在命令行窗口中执行数据库迁移：
 
-```
+```shell
 nb orm upgrade
 ```
 
@@ -67,6 +75,14 @@ nb orm upgrade
 
 - 默认值: 500
 
+### min_memes
+
+- 说明: 最小表情包数量，保存的表情包达到这个数值才发送
+
+- 类型: int
+
+- 默认值: 10
+
 ### meme_general_max_query
 
 - 说明: 全局最大查询数量
@@ -82,3 +98,11 @@ nb orm upgrade
 - 类型: int
 
 - 默认值: 50
+
+### enable_security_check
+
+- 说明: 添加表情时，启用基于 LLM 的安全检查
+
+- 类型: bool
+
+- 默认值: True
