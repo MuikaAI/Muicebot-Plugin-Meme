@@ -4,7 +4,7 @@ import time
 from hashlib import md5
 from os import remove
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Union
 
 import httpx
 from jinja2 import Environment, FileSystemLoader
@@ -14,7 +14,8 @@ from muicebot.models import Message, Resource
 from muicebot.muice import Muice
 from nonebot import logger
 from nonebot_plugin_localstore import get_plugin_data_dir
-from nonebot_plugin_orm import async_scoped_session
+from nonebot_plugin_orm import async_scoped_session, get_session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import config
 from .database.crud import MemeRepository
@@ -22,6 +23,7 @@ from .models import Meme
 
 SEARCH_PATH = [Path(__file__).parent / "templates"]
 MEMES_SAVE_PATH = get_plugin_data_dir() / "memes"
+UNION_SESSION = Union[async_scoped_session, AsyncSession]
 
 
 class MemeManager:
@@ -161,8 +163,8 @@ class MemeManager:
         else:
             return response_text
 
-    async def check_memes_valid(
-        self, session: async_scoped_session, memes: list[Meme]
+    async def _check_memes_valid(
+        self, session: UNION_SESSION, memes: list[Meme]
     ) -> list[Meme]:
         """
         [预检] 检查所有 Memes 有效性
@@ -178,7 +180,7 @@ class MemeManager:
                 del valid_memes[index - len(invalid_memes) + 1]
 
         for invalid_meme in invalid_memes:
-            await self.delete_meme(session, invalid_meme)
+            await self._delete_meme(session, invalid_meme)
 
         if invalid_memes:
             await session.commit()
@@ -188,18 +190,21 @@ class MemeManager:
 
         return valid_memes
 
-    async def load_all_memes(self, session: async_scoped_session):
+    async def _load_memes(self):
         """
         [初始化] 从数据库中获取所有 Meme
         """
-        memes = await MemeRepository.get_all_memes(session)
-        memes = await self.check_memes_valid(session, memes)
+        session = get_session()
+        async with session.begin():
+            memes = await MemeRepository.get_all_memes(session)
+            memes = await self._check_memes_valid(session, memes)
+
         self._all_valid_memes = memes
         self._all_valid_memes_count = len(memes)
 
         logger.info(f"一共加载了 {self._all_valid_memes_count} 个有效 Memes")
 
-    async def delete_meme(self, session: async_scoped_session, meme: Meme):
+    async def _delete_meme(self, session: UNION_SESSION, meme: Meme):
         """
         删除指定 Meme
         """
@@ -223,7 +228,7 @@ class MemeManager:
         self._sort_memes()
         memes_to_delete = self._all_valid_memes[config.max_memes :]
         for meme in memes_to_delete:
-            await self.delete_meme(session, meme)
+            await self._delete_meme(session, meme)
 
         logger.info(
             f"已删除 {len(memes_to_delete)} 个 Memes，当前有效 Memes 数量为 {self._all_valid_memes_count}"

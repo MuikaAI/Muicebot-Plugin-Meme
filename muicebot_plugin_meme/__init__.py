@@ -1,10 +1,11 @@
 from random import random
+from typing import Optional
 
 from muicebot.llm import ModelCompletions
 from muicebot.models import Message, Resource
 from muicebot.plugin import PluginMetadata
 from muicebot.plugin.hook import on_after_completion
-from nonebot import logger, on_message
+from nonebot import get_driver, logger, on_message
 from nonebot.adapters import Event
 from nonebot_plugin_alconna import (
     uniseg,
@@ -23,7 +24,15 @@ __plugin_meta__ = PluginMetadata(
     config=Config,
 )
 
-meme_manager = MemeManager()
+driver = get_driver()
+meme_manager: Optional[MemeManager] = None
+
+
+@driver.on_startup
+async def _():
+    global meme_manager
+    meme_manager = MemeManager()
+    await meme_manager._load_memes()
 
 
 async def is_image_event(event: Event) -> bool:
@@ -41,6 +50,8 @@ async def auto_save_image(
     event: Event,
     db_session: async_scoped_session,
 ):
+    assert meme_manager
+
     if random() > config.meme_save_probability:
         return
 
@@ -62,6 +73,8 @@ async def auto_save_image(
 
 @on_after_completion()
 async def send_meme(message: Message, completions: ModelCompletions):
+    assert meme_manager
+
     if random() > config.meme_probability:
         return
 

@@ -1,9 +1,10 @@
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from nonebot_plugin_orm import async_scoped_session
 from sqlalchemy import func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Meme
 from .orm_models import MemeORM
@@ -24,7 +25,7 @@ class MemeRepository:
 
     @staticmethod
     async def get_all_memes(
-        session: async_scoped_session, limit: Optional[int] = None
+        session: Union[async_scoped_session, AsyncSession], limit: Optional[int] = None
     ) -> list[Meme]:
         """
         获得全部 memes
@@ -60,7 +61,9 @@ class MemeRepository:
         )
 
     @staticmethod
-    async def remove_meme(session: async_scoped_session, meme_id: int):
+    async def remove_meme(
+        session: Union[async_scoped_session, AsyncSession], meme_id: int
+    ):
         """
         删除 meme
 
