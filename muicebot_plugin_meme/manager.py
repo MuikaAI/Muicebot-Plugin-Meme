@@ -121,16 +121,22 @@ class MemeManager:
             raise RuntimeError("LLM 不是多模态的！")
 
         model_request = ModelRequest(prompt, system=system, resources=[image])
+        response_usage = -1
+        logger.debug(f"向 LLM 发送请求: {model_request}")
 
         response = await model.ask(model_request, stream=model.config.stream)
 
         if isinstance(response, ModelCompletions):
             response_text = response.text
+            response_usage = response.usage
         else:
             response_chunks: list[str] = []
             async for chunk in response:
                 response_chunks.append(chunk.chunk)
+                response_usage = chunk.usage or chunk.usage
             response_text = "".join(response_chunks)
+
+        logger.debug(f"LLM 请求已完成，用量: {response_usage}")
 
         if format == "int":
             try:
@@ -227,7 +233,7 @@ class MemeManager:
         if self._all_valid_memes_count <= config.max_memes:
             return
 
-        logger.debug("Meme 数量已达上限，正在执行自动清理...")
+        logger.info("Meme 数量已达上限，正在执行自动清理...")
 
         self._sort_memes()
         memes_to_delete = self._all_valid_memes[config.max_memes :]
@@ -238,7 +244,7 @@ class MemeManager:
             f"已删除 {len(memes_to_delete)} 个 Memes，当前有效 Memes 数量为 {self._all_valid_memes_count}"
         )
         await session.commit()
-        logger.debug("自动清理 Memes 完成")
+        logger.info("自动清理 Memes 完成")
 
     async def add_new_meme(self, session: async_scoped_session, meme_image: Resource):
         """

@@ -4,6 +4,7 @@ from muicebot.llm import ModelCompletions, ModelRequest
 from muicebot.models import Message
 from muicebot.muice import Muice
 from muicebot.templates import generate_prompt_from_template
+from nonebot import logger
 
 from ..config import config
 from ..models import Meme
@@ -63,21 +64,26 @@ async def llm_query(message: Message, memes: list[Meme]) -> int:
     )
 
     model_request = ModelRequest(prompt, system=system)
+    response_usage = -1
+    logger.debug(f"向 LLM 发送检索请求: {model_request}")
 
     response = await model.ask(model_request, stream=model.config.stream)
 
     if isinstance(response, ModelCompletions):
         response_text = response.text
+        response_usage = response.usage
     else:
         response_chunks: list[str] = []
         async for chunk in response:
             response_chunks.append(chunk.chunk)
+            response_usage = chunk.usage or response_usage
         response_text = "".join(response_chunks)
+    logger.debug(f"LLM 请求已完成，用量: {response_usage}")
 
     try:
         target_meme_id = int(response_text)
     except ValueError:
-        # 尝试提取数字
+        logger.warning(f"LLM 返回了预期之外的回复: {response_text}, 正在尝试提取数字")
         match = re.search(r"\d+", response_text)
         if match:
             target_meme_id = int(match.group())

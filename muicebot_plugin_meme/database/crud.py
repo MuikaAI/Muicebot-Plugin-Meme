@@ -19,7 +19,7 @@ class MemeRepository:
             hash=meme_orm.hash,
             valid=meme_orm.valid,
             description=meme_orm.description,
-            tags=list(meme_orm.tag),
+            tags=json.loads(meme_orm.tag),
             usage=meme_orm.usage,
         )
 

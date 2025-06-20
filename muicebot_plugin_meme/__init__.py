@@ -7,9 +7,7 @@ from muicebot.plugin import PluginMetadata
 from muicebot.plugin.hook import on_after_completion
 from nonebot import get_driver, logger, on_message
 from nonebot.adapters import Event
-from nonebot_plugin_alconna import (
-    uniseg,
-)
+from nonebot_plugin_alconna import Image, uniseg
 from nonebot_plugin_alconna.uniseg import UniMsg
 from nonebot_plugin_orm import async_scoped_session
 
@@ -35,10 +33,8 @@ async def _():
     await meme_manager._load_memes()
 
 
-async def is_image_event(event: Event) -> bool:
-    message = event.get_message()
-    logger.debug(message.get_segment_class())
-    return message.count("image") != 0 and not message.extract_plain_text()
+async def is_image_event(bot_message: UniMsg) -> bool:
+    return bot_message.count(Image) != 0 and not bot_message.extract_plain_text()
 
 
 image_event = on_message(rule=is_image_event)
@@ -85,12 +81,8 @@ async def send_meme(message: Message, completions: ModelCompletions):
     target_meme = await meme_manager.query_meme(message)
 
     if target_meme is None:
-        logger.info("未找到合适的 Meme，已跳过")
         return
 
-    logger.success(
-        f"找到了合适的 Meme! 描述: {target_meme.description} 标签: {target_meme.tags}"
-    )
     completions.resources.append(
         Resource(type="image", path=target_meme.path.as_posix())
     )
