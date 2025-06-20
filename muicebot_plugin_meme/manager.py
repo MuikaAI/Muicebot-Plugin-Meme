@@ -1,16 +1,19 @@
 import json
 import re
-from base64 import b64encode
+import time
+from hashlib import md5
 from os import remove
 from pathlib import Path
 from typing import Any, Literal, Optional
 
+import httpx
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound
 from muicebot.llm import ModelCompletions, ModelRequest
 from muicebot.models import Message, Resource
 from muicebot.muice import Muice
 from nonebot import logger
+from nonebot_plugin_localstore import get_plugin_data_dir
 from nonebot_plugin_orm import async_scoped_session
 
 from .config import config
@@ -18,6 +21,7 @@ from .database.crud import MemeRepository
 from .models import Meme
 
 SEARCH_PATH = [Path(__file__).parent / "templates"]
+MEMES_SAVE_PATH = get_plugin_data_dir() / "memes"
 
 
 class MemeManager:
@@ -40,15 +44,44 @@ class MemeManager:
         """
         self._all_valid_memes.sort(key=lambda x: x.usage)
 
-    def _path_to_base64(self, image_path: Path | str) -> str:
+    def _path_to_md5(self, image_path: Path | str) -> str:
         """
-        将图片转换为 base64
+        将图片转换为 md5
         """
         with open(image_path, "rb") as f:
             image_data = f.read()
         if not image_data:
             raise IOError(f"读取图片文件失败: {image_path}")
-        return b64encode(image_data).decode("utf-8")
+        return md5(image_data).hexdigest()
+
+    async def _save_meme(self, resource: Resource) -> Optional[Path]:
+        """
+        保存 Meme 到本地
+        """
+        logger.debug("正在保存 Meme...")
+        meme_url = resource.url or resource.path
+        meme_extension = (
+            meme_url.split(".")[-1] if "." in meme_url.split("/")[-1] else "png"
+        )
+        meme_name = f"{int(time.time())}.{meme_extension}"
+        meme_path = MEMES_SAVE_PATH / meme_name
+        if not meme_path.parent.exists():
+            meme_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if meme_url.startswith("http"):
+            async with httpx.AsyncClient() as client:
+                response = await client.get(meme_url)
+                if response.status_code == 200:
+                    with open(meme_path, "wb") as f:
+                        f.write(response.content)
+                else:
+                    logger.error(f"下载 Meme 失败: {response.status_code}")
+                    return None
+        else:
+            # 如果是本地路径，直接复制
+            meme_path.write_bytes(Path(resource.path).read_bytes())
+
+        return meme_path if meme_path.is_file() else None
 
     def _generate_prompt_from_template(self, template_name: str) -> str:
         """
@@ -205,7 +238,7 @@ class MemeManager:
         if meme_image.type != "image":
             raise ValueError("此类型不是 image 类型！")
 
-        new_meme_hash = self._path_to_base64(meme_image.path)
+        new_meme_hash = self._path_to_md5(meme_image.path)
 
         if any(new_meme_hash == meme.hash for meme in self._all_valid_memes):
             logger.debug("检查到此 meme 已存在，停止添加")
@@ -232,8 +265,12 @@ class MemeManager:
             format="json",
         )
 
+        meme_local_path = await self._save_meme(meme_image)
+        if not meme_local_path:
+            return
+
         new_meme = Meme(
-            path=Path(meme_image.path),
+            path=meme_local_path,
             hash=new_meme_hash,
             description=meme_desc.get("desc", ""),
             tags=meme_desc.get("tags", []),
