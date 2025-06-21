@@ -9,7 +9,8 @@ from typing import Any, Literal, Optional, Union
 import httpx
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound
-from muicebot.llm import ModelCompletions, ModelRequest
+from muicebot.config import get_model_config
+from muicebot.llm import BaseLLM, ModelCompletions, ModelRequest, load_model
 from muicebot.models import Message, Resource
 from muicebot.muice import Muice
 from nonebot import logger
@@ -31,6 +32,7 @@ class MemeManager:
         self._all_valid_memes: list[Meme] = []
         self._all_valid_memes_count: int = 0
         self._jinja2_env = Environment(loader=FileSystemLoader(SEARCH_PATH))
+        self._multimodal_model: Optional[BaseLLM] = None
 
     @property
     def all_valid_memes_count(self) -> int:
@@ -113,8 +115,19 @@ class MemeManager:
     ) -> Any:
         """
         与 llm 交互
+
+        :raise RuntimeError: LLM 尚未运行或不是多模态
         """
-        model = Muice.get_instance().model
+        if not self._multimodal_model:
+            if config.meme_multimodal_config:
+                self._multimodal_model = load_model(
+                    get_model_config(config.meme_multimodal_config)
+                )
+                self._multimodal_model.load()
+            else:
+                self._multimodal_model = Muice.get_instance().model
+
+        model = self._multimodal_model
         if not (model and model.is_running):
             raise RuntimeError("LLM 尚未运行！")
         elif not model.config.multimodal:
@@ -259,26 +272,35 @@ class MemeManager:
             logger.debug("检查到此 meme 已存在，停止添加")
             return
 
-        if config.enable_security_check:
+        if config.meme_security_check:
             logger.debug("正在进行安全检查...")
-            check_result: int = await self._chat_with_model(
-                "回复纯数字0或1",
-                system=self._generate_prompt_from_template(
-                    "meme_security_check.jinja2"
-                ),
-                image=meme_image,
-                format="int",
-            )
+            try:
+                check_result: int = await self._chat_with_model(
+                    "回复纯数字0或1",
+                    system=self._generate_prompt_from_template(
+                        "meme_security_check.jinja2"
+                    ),
+                    image=meme_image,
+                    format="int",
+                )
+            except RuntimeError as e:
+                logger.warning(f"尝试调用LLM时出现问题:{e}, 已停止添加")
+                return None
             if not check_result:
                 logger.warning("此表情包未通过安全检查！已停止添加")
+                return None
 
         logger.debug("调用LLM生成表情包描述...")
-        meme_desc: dict[str, Any] = await self._chat_with_model(
-            "以JSON格式生成标签和内容",
-            system=self._generate_prompt_from_template("meme_description.jinja2"),
-            image=meme_image,
-            format="json",
-        )
+        try:
+            meme_desc: dict[str, Any] = await self._chat_with_model(
+                "以JSON格式生成标签和内容",
+                system=self._generate_prompt_from_template("meme_description.jinja2"),
+                image=meme_image,
+                format="json",
+            )
+        except RuntimeError as e:
+            logger.warning(f"尝试调用LLM时出现问题:{e}, 已停止添加")
+            return None
 
         meme_local_path = await self._save_meme(meme_image)
         if not meme_local_path:

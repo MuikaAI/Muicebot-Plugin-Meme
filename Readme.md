@@ -99,10 +99,26 @@ nb orm upgrade
 
 - 默认值: 50
 
-### enable_security_check
+### meme_security_check
 
 - 说明: 添加表情时，启用基于 LLM 的安全检查
 
 - 类型: bool
 
 - 默认值: True
+
+### meme_multimodal_config
+
+- 说明: 生成图片描述时，使用的多模态模型配置名
+
+- 类型: Optional[str]
+
+- 默认值: None
+
+## 下一步工作
+
+[ ] 通过计算余弦相似度匹配 Meme 描述和模型文本内容
+
+[ ] 通过 [Muice-Chatbot中的OFA图像识别功能](https://github.com/Moemu/Muice-Chatbot/blob/main/docs/other_func.md#ofa-%E5%9B%BE%E5%83%8F%E8%AF%86%E5%88%AB%E8%AF%86%E5%88%AB--%E5%8F%91%E9%80%81%E8%A1%A8%E6%83%85%E5%8C%85) 生成图片描述
+
+[ ] 检查对 gif 表情包的适用性

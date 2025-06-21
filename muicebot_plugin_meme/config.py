@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 
 from nonebot import get_plugin_config
 from pydantic import BaseModel
@@ -19,8 +19,10 @@ class Config(BaseModel):
     """当启用 LLM 查询时，最大的查询数量"""
     meme_general_max_query: int = max_memes
     """全局最大查询数量"""
-    enable_security_check: bool = True
+    meme_security_check: bool = True
     """启用基于 LLM 的安全检查"""
+    meme_multimodal_config: Optional[str] = None
+    """生成图片描述时，使用的多模态模型配置名"""
 
 
 config = get_plugin_config(Config)
