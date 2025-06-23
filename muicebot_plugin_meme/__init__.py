@@ -7,13 +7,23 @@ from muicebot.plugin import PluginMetadata
 from muicebot.plugin.hook import on_after_completion
 from nonebot import get_driver, logger, on_message
 from nonebot.adapters import Event
-from nonebot_plugin_alconna import Image, uniseg
+from nonebot_plugin_alconna import (
+    Alconna,
+    CommandMeta,
+    Image,
+    Subcommand,
+    UniMessage,
+    on_alconna,
+    uniseg,
+)
 from nonebot_plugin_alconna.uniseg import UniMsg
 from nonebot_plugin_orm import async_scoped_session
 
 from .config import Config, config
 from .manager import MemeManager
 from .utils import extract_multi_resource
+
+COMMAND_PREFIXES = [".", "/"]
 
 __plugin_meta__ = PluginMetadata(
     name="Muicebot 表情包处理插件",
@@ -38,6 +48,26 @@ async def is_image_event(bot_message: UniMsg) -> bool:
 
 
 image_event = on_message(rule=is_image_event)
+
+meme_cmd = on_alconna(
+    Alconna(
+        COMMAND_PREFIXES,
+        "meme",
+        Subcommand("analysis"),
+        meta=CommandMeta("Muicebot Meme插件指令"),
+    ),
+    priority=10,
+    block=True,
+    skip_for_unmatch=False,
+)
+
+
+@meme_cmd.assign("analysis")
+async def analysis():
+    assert meme_manager
+    await UniMessage(
+        f"一共偷了{meme_manager.all_valid_memes_count}个有效表情包✨"
+    ).finish()
 
 
 @image_event.handle()
