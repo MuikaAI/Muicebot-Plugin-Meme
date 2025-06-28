@@ -90,11 +90,11 @@ async def auto_save_image(
 
     logger.debug("正在偷图...")
 
-    await meme_manager.add_new_meme(db_session, images[0])
+    result = await meme_manager.add_new_meme(db_session, images[0])
 
-    logger.success("偷图成功✨")
-
-    await db_session.commit()
+    if result:
+        logger.success("偷图成功✨")
+        await db_session.commit()
 
 
 @on_after_completion()

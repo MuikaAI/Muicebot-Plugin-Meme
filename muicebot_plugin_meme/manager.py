@@ -67,7 +67,7 @@ class MemeManager:
 
         resource.ensure_mimetype()  # 获取正确的类型
         meme_extension = resource.extension or ".png"
-        meme_name = f"{int(time.time())}.{meme_extension}"
+        meme_name = f"{int(time.time())}{meme_extension}"
         meme_path = MEMES_SAVE_PATH / meme_name
         if not meme_path.parent.exists():
             meme_path.parent.mkdir(parents=True, exist_ok=True)
@@ -262,9 +262,13 @@ class MemeManager:
         await session.commit()
         logger.info("自动清理 Memes 完成")
 
-    async def add_new_meme(self, session: async_scoped_session, meme_image: Resource):
+    async def add_new_meme(
+        self, session: async_scoped_session, meme_image: Resource
+    ) -> bool:
         """
         添加 Meme
+
+        :return: 是否添加成功
         """
         if meme_image.type != "image":
             raise ValueError("此类型不是 image 类型！")
@@ -273,7 +277,7 @@ class MemeManager:
 
         if any(new_meme_hash == meme.hash for meme in self._all_valid_memes):
             logger.debug("检查到此 meme 已存在，停止添加")
-            return
+            return False
 
         if config.meme_security_check:
             logger.debug("正在进行安全检查...")
@@ -288,10 +292,10 @@ class MemeManager:
                 )
             except RuntimeError as e:
                 logger.warning(f"尝试调用LLM时出现问题:{e}, 已停止添加")
-                return None
+                return False
             if not check_result:
                 logger.warning("此表情包未通过安全检查！已停止添加")
-                return None
+                return False
 
         logger.debug("调用LLM生成表情包描述...")
         try:
@@ -303,11 +307,11 @@ class MemeManager:
             )
         except RuntimeError as e:
             logger.warning(f"尝试调用LLM时出现问题:{e}, 已停止添加")
-            return None
+            return False
 
         meme_local_path = await self._save_meme(meme_image)
         if not meme_local_path:
-            return
+            return False
 
         new_meme = Meme(
             path=meme_local_path,
@@ -324,6 +328,8 @@ class MemeManager:
         logger.success(
             f"已成功添加新的表情包！描述:{new_meme.description}, 标签: {new_meme.tags}"
         )
+
+        return True
 
     async def query_meme(self, message: Message) -> Optional[Meme]:
         """
