@@ -25,7 +25,9 @@ async def extract_multi_resource(
             if resource.path is not None:
                 path = str(resource.path)
             elif resource.url is not None:
-                path = await download_file(resource.url, file_name=resource.name)
+                path = await download_file(
+                    resource.url, file_name=resource.name, cache=True
+                )
             elif resource.origin is not None:
                 logger.warning("无法通过通用方式获取文件URL，回退至适配器自有方式...")
                 path = await get_file_via_adapter(resource.origin, event)  # type:ignore

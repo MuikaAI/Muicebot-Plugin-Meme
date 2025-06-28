@@ -64,15 +64,15 @@ class MemeManager:
         保存 Meme 到本地
         """
         logger.debug("正在保存 Meme...")
-        meme_url = resource.url or resource.path
-        meme_extension = (
-            meme_url.split(".")[-1] if "." in meme_url.split("/")[-1] else "png"
-        )
+
+        resource.ensure_mimetype()  # 获取正确的类型
+        meme_extension = resource.extension or ".png"
         meme_name = f"{int(time.time())}.{meme_extension}"
         meme_path = MEMES_SAVE_PATH / meme_name
         if not meme_path.parent.exists():
             meme_path.parent.mkdir(parents=True, exist_ok=True)
 
+        meme_url = resource.url or resource.path
         if meme_url.startswith("http"):
             async with httpx.AsyncClient() as client:
                 response = await client.get(meme_url)
