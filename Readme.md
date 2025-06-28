@@ -21,7 +21,7 @@
 
 ## 先决条件
 
-- `muicebot` 版本号大于等于 `1.0.2` （还没发布）
+- `muicebot` 版本号大于等于 `1.0.2`
 
 - 当前需要启用多模态的模型（已确认这是一个框架缺陷）
 
@@ -117,8 +117,8 @@ nb orm upgrade
 
 ## 下一步工作
 
-[ ] 通过计算余弦相似度匹配 Meme 描述和模型文本内容
+- [ ] 通过计算余弦相似度匹配 Meme 描述和模型文本内容
 
-[ ] 通过 [Muice-Chatbot中的OFA图像识别功能](https://github.com/Moemu/Muice-Chatbot/blob/main/docs/other_func.md#ofa-%E5%9B%BE%E5%83%8F%E8%AF%86%E5%88%AB%E8%AF%86%E5%88%AB--%E5%8F%91%E9%80%81%E8%A1%A8%E6%83%85%E5%8C%85) 生成图片描述
+- [ ] 通过 [Muice-Chatbot中的OFA图像识别功能](https://github.com/Moemu/Muice-Chatbot/blob/main/docs/other_func.md#ofa-%E5%9B%BE%E5%83%8F%E8%AF%86%E5%88%AB%E8%AF%86%E5%88%AB--%E5%8F%91%E9%80%81%E8%A1%A8%E6%83%85%E5%8C%85) 生成图片描述
 
-[ ] 检查对 gif 表情包的适用性
+- [ ] 检查对 gif 表情包的适用性
