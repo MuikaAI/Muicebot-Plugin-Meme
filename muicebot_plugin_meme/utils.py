@@ -1,3 +1,4 @@
+import re
 from typing import Literal
 
 from muicebot.models import Resource
@@ -37,3 +38,16 @@ async def extract_multi_resource(
             logger.error(f"处理文件失败: {e}")
 
     return resources
+
+
+def process_message(message: str) -> str:
+    """
+    提取思考结果
+    """
+    if not message.startswith("<think>"):
+        return message
+
+    thoughts_pattern = re.compile(r"<think>(.*?)</think>", re.DOTALL)
+    result = thoughts_pattern.sub("", message).strip()
+
+    return result

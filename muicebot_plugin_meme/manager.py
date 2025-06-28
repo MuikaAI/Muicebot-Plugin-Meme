@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .config import config
 from .database.crud import MemeRepository
 from .models import Meme
+from .utils import process_message
 
 SEARCH_PATH = [Path(__file__).parent / "templates"]
 MEMES_SAVE_PATH = get_plugin_data_dir() / "memes"
@@ -148,6 +149,8 @@ class MemeManager:
                 response_chunks.append(chunk.chunk)
                 response_usage = chunk.usage or chunk.usage
             response_text = "".join(response_chunks)
+
+        response_text = process_message(response_text)
 
         logger.debug(f"LLM 请求已完成，用量: {response_usage}")
 
