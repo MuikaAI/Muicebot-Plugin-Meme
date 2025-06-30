@@ -11,6 +11,7 @@ dependencies = [
     "nonebot_plugin_orm>=0.7.7",
     "nonebot_plugin_localstore>=0.7.4",
     "httpx>=0.28.1",
+    "pillow>=11.1.0",
 ]
 authors = [
     { name = "Moemu", email = "i@snowy.moe" },
