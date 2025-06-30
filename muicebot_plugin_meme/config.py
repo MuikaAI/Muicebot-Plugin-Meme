@@ -13,6 +13,8 @@ class Config(BaseModel):
     """相似度计算方式"""
     max_memes: int = 500
     """最大表情包数量"""
+    max_meme_size: int = 1024 * 1024
+    """最大表情包大小(bytes)"""
     min_memes: int = 10
     """最小表情包数量，保存的表情包达到这个数值才发送"""
     meme_llm_max_query: int = 50

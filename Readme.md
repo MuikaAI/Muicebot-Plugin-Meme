@@ -121,4 +121,4 @@ nb orm upgrade
 
 - [ ] 通过 [Muice-Chatbot中的OFA图像识别功能](https://github.com/Moemu/Muice-Chatbot/blob/main/docs/other_func.md#ofa-%E5%9B%BE%E5%83%8F%E8%AF%86%E5%88%AB%E8%AF%86%E5%88%AB--%E5%8F%91%E9%80%81%E8%A1%A8%E6%83%85%E5%8C%85) 生成图片描述
 
-- [ ] 检查对 gif 表情包的适用性
+- [X] 检查对 gif 表情包的适用性

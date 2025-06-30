@@ -1,11 +1,15 @@
+import math
 import re
-from typing import Literal
+from io import BytesIO
+from pathlib import Path
+from typing import Literal, Union
 
 from muicebot.models import Resource
 from muicebot.utils.utils import download_file, get_file_via_adapter
 from nonebot import logger
 from nonebot.adapters import Event
 from nonebot_plugin_alconna import UniMessage, uniseg
+from PIL import Image, ImageSequence
 
 
 async def extract_multi_resource(
@@ -53,3 +57,54 @@ def process_message(message: str) -> str:
     result = thoughts_pattern.sub("", message).strip()
 
     return result
+
+
+def extract_and_combine_gif_frames(
+    gif_path: Union[Path, bytes, BytesIO], step=2
+) -> BytesIO:
+    """
+    提取 GIF 每一帧，并按指定间隔组合成一张图。
+
+    :param gif_path: 输入 GIF 文件路径或字节流
+    :param step: 提取帧的间隔
+    """
+    # 打开 GIF 动图
+    if isinstance(gif_path, bytes):
+        gif_path = BytesIO(gif_path)
+    gif = Image.open(gif_path)
+
+    # 提取间隔帧
+    frames = [
+        frame.copy().convert("RGBA")
+        for i, frame in enumerate(ImageSequence.Iterator(gif))
+        if i % step == 0
+    ]
+
+    if not frames:
+        raise ValueError("没有提取到任何帧，请检查 step 参数是否过大。")
+
+    # 获取帧尺寸
+    frame_count = len(frames)
+    width, height = frames[0].size
+
+    cols = math.ceil(math.sqrt(frame_count))
+    rows = math.ceil(frame_count / cols)
+
+    # 按水平分布帧数
+    out_width = cols * width
+    out_height = rows * height
+
+    combined_image = Image.new("RGBA", (out_width, out_height))
+
+    for idx, frame in enumerate(frames):
+        row = idx // cols
+        col = idx % cols
+        x = col * width
+        y = row * height
+        combined_image.paste(frame, (x, y))
+
+    # 保存合成图像
+    image_bytes = BytesIO()
+    combined_image.save(image_bytes, format="PNG")
+    image_bytes.seek(0)
+    return image_bytes

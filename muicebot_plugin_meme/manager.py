@@ -2,7 +2,7 @@ import json
 import re
 import time
 from hashlib import md5
-from os import remove
+from os import remove, replace
 from pathlib import Path
 from typing import Any, Literal, Optional, Union
 
@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .config import config
 from .database.crud import MemeRepository
 from .models import Meme
-from .utils import process_message
+from .utils import extract_and_combine_gif_frames, process_message
 
 SEARCH_PATH = [Path(__file__).parent / "templates"]
 MEMES_SAVE_PATH = get_plugin_data_dir() / "memes"
@@ -143,13 +143,20 @@ class MemeManager:
         if isinstance(response, ModelCompletions):
             response_text = response.text
             response_usage = response.usage
+            response_status = response.succeed
         else:
             response_chunks: list[str] = []
+            response_status = True
             async for chunk in response:
                 response_chunks.append(chunk.chunk)
                 response_usage = chunk.usage or chunk.usage
+                response_status = (
+                    chunk.succeed if not chunk.succeed else response_status
+                )
             response_text = "".join(response_chunks)
 
+        if not response_status:
+            raise RuntimeError("LLM 调用失败！")
         response_text = process_message(response_text)
 
         logger.debug(f"LLM 请求已完成，用量: {response_usage}")
@@ -273,11 +280,37 @@ class MemeManager:
         if meme_image.type != "image":
             raise ValueError("此类型不是 image 类型！")
 
-        new_meme_hash = self._path_to_md5(meme_image.path)
+        new_meme_path = Path(meme_image.path)
+        new_meme_hash = self._path_to_md5(new_meme_path)
 
         if any(new_meme_hash == meme.hash for meme in self._all_valid_memes):
             logger.debug("检查到此 meme 已存在，停止添加")
             return False
+
+        if new_meme_path.stat().st_size > config.max_meme_size:
+            logger.debug("检测到此 meme 太大，停止添加")
+            return False
+
+        # 确保实际文件类型与文件扩展名一致
+        meme_image.ensure_mimetype()
+        meme_extension = meme_image.extension or new_meme_path.suffix
+
+        if meme_extension.lower() != new_meme_path.suffix.lower():
+            logger.warning("实际扩展名与文件名所提供的扩展名不一致，尝试修改...")
+            current_suffix_path = new_meme_path.with_suffix(meme_extension)
+            replace(new_meme_path, current_suffix_path)
+            meme_image.path = str(current_suffix_path)
+            new_meme_path = current_suffix_path
+
+        old_meme_image_path = meme_image.path
+        gif_to_png_path = None
+
+        if meme_extension.lower() == ".gif":
+            logger.debug("临时将gif转换为png以供 LLM 审查")
+            gif_to_png_bytes = extract_and_combine_gif_frames(new_meme_path)
+            gif_to_png_path = new_meme_path.with_suffix(".png")
+            gif_to_png_path.write_bytes(gif_to_png_bytes.read())
+            meme_image.path = str(gif_to_png_path)
 
         if config.meme_security_check:
             logger.debug("正在进行安全检查...")
@@ -308,6 +341,11 @@ class MemeManager:
         except RuntimeError as e:
             logger.warning(f"尝试调用LLM时出现问题:{e}, 已停止添加")
             return False
+
+        meme_image.path = old_meme_image_path
+        # 删除临时生成的 PNG 文件（如果有）
+        if gif_to_png_path and new_meme_path.suffix != ".png":
+            gif_to_png_path.unlink()
 
         meme_local_path = await self._save_meme(meme_image)
         if not meme_local_path:
