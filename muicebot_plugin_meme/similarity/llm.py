@@ -72,12 +72,18 @@ async def llm_query(message: Message, memes: list[Meme]) -> int:
     if isinstance(response, ModelCompletions):
         response_text = response.text
         response_usage = response.usage
+        response_status = response.succeed
     else:
         response_chunks: list[str] = []
         async for chunk in response:
+            response_status = True
             response_chunks.append(chunk.chunk)
             response_usage = chunk.usage or response_usage
+            response_status = chunk.succeed if not chunk.succeed else response_status
         response_text = "".join(response_chunks)
+
+    if not response_status:
+        raise RuntimeError("LLM 请求失败！")
     logger.debug(f"LLM 请求已完成，用量: {response_usage}")
 
     try:
