@@ -19,6 +19,8 @@
 
 - `llm` 直接问 LLM 哪个更加合适（大约需要 1k ~ 3k token，非常准确）
 
+- `cosine` 通过计算模型回复与表情包描述的余弦相似度比较出哪个表情包更加合适（由于表情包描述的不确定性，准确度次于 LLM）
+
 ## 先决条件
 
 - `muicebot` 版本号大于等于 `1.0.2`
@@ -115,9 +117,43 @@ nb orm upgrade
 
 - 默认值: None
 
+### meme_embedding_model
+
+- 说明: 嵌入模型名称
+
+- 类型: str
+
+- 默认值: `text-embedding-v4`
+
+### meme_embedding_base_url
+
+- 说明: OpenAI 兼容端口的嵌入模型 base_url
+
+- 类型: str
+
+- 默认值: `https://dashscope.aliyuncs.com/compatible-mode/v1`
+
+
+### meme_embedding_service_api_key
+
+- 说明: 访问嵌入模型所需的 API Key
+
+- 类型: Optional[str]
+
+- 默认值: None
+
+### meme_embedding_cache_enabled
+
+- 说明: 启用嵌入缓存
+
+- 类型: bool
+
+- 默认值: True
+
+
 ## 下一步工作
 
-- [ ] 通过计算余弦相似度匹配 Meme 描述和模型文本内容
+- [X] 通过计算余弦相似度匹配 Meme 描述和模型文本内容
 
 - [ ] 通过 [Muice-Chatbot中的OFA图像识别功能](https://github.com/Moemu/Muice-Chatbot/blob/main/docs/other_func.md#ofa-%E5%9B%BE%E5%83%8F%E8%AF%86%E5%88%AB%E8%AF%86%E5%88%AB--%E5%8F%91%E9%80%81%E8%A1%A8%E6%83%85%E5%8C%85) 生成图片描述
 

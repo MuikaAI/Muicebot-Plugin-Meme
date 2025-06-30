@@ -383,6 +383,10 @@ class MemeManager:
             from .similarity.llm import llm_query
 
             meme_id = await llm_query(message, self._all_valid_memes)
+        elif config.meme_similarity_method == "cosine":
+            from .similarity.cosine import cosine_query
+
+            meme_id = await cosine_query(message, self._all_valid_memes)
         else:
             raise ValueError(
                 f"未找到要求的相似度匹配算法: {config.meme_similarity_method}"

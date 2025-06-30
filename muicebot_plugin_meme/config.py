@@ -1,7 +1,7 @@
 from typing import Literal, Optional
 
 from nonebot import get_plugin_config
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class Config(BaseModel):
@@ -25,6 +25,25 @@ class Config(BaseModel):
     """启用基于 LLM 的安全检查"""
     meme_multimodal_config: Optional[str] = None
     """生成图片描述时，使用的多模态模型配置名"""
+
+    meme_embedding_model: str = "text-embedding-v4"
+    """嵌入模型名称"""
+    meme_embedding_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    """OpenAI 兼容端口的嵌入模型 base_url"""
+    meme_embedding_service_api_key: Optional[str] = None
+    """访问嵌入模型所需的 API Key"""
+    meme_embedding_cache_enabled: bool = True
+    """启用嵌入缓存"""
+
+    @field_validator("meme_embedding_service_api_key")
+    @classmethod
+    def check_api_key(cls, v: Optional[str]) -> Optional[str]:
+        if cls.meme_similarity_method != "cosine" or v:
+            return v
+
+        raise ValueError(
+            "启用 cosine 相似度计算时，需要配置 `meme_embedding_service_api_key` !"
+        )
 
 
 config = get_plugin_config(Config)
